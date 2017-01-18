@@ -1,18 +1,24 @@
 package io.github.agileek.maven;
 
-import com.squareup.javapoet.JavaFile;
-import com.squareup.javapoet.MethodSpec;
-import com.squareup.javapoet.TypeSpec;
+import com.helger.jcodemodel.EClassType;
+import com.helger.jcodemodel.JClassAlreadyExistsException;
+import com.helger.jcodemodel.JCodeModel;
+import com.helger.jcodemodel.JDefinedClass;
+import com.helger.jcodemodel.JEnumConstant;
+import com.helger.jcodemodel.JExpr;
+import com.helger.jcodemodel.JFieldVar;
+import com.helger.jcodemodel.JMethod;
+import com.helger.jcodemodel.JMod;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.io.RandomAccessFile;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import javax.lang.model.element.Modifier;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
@@ -27,46 +33,56 @@ import org.apache.maven.project.MavenProject;
 )
 public class ChecksumFlywayMojo extends AbstractMojo {
     @Parameter(name = "location", defaultValue = "/db/migration")
-    private String location;
+    String location;
 
     @Parameter(name = "generatedSourcesFolder", defaultValue = "${project.build.directory}/generated-sources")
-    private String generatedSourcesFolder;
+    String generatedSourcesFolder;
 
     @Parameter(defaultValue = "${project}", readonly = true, required = true)
-    private MavenProject project;
+    MavenProject project;
 
 
     @Override
     public final void execute() throws MojoExecutionException, MojoFailureException {
-        JavaFile javaFile = generateEnumWithFilesChecksum(getJavaFiles(project.getCompileSourceRoots(), location));
+        JCodeModel javaFile = generateEnumWithFilesChecksum(getJavaFiles(project.getCompileSourceRoots(), location));
         try {
-            javaFile.writeTo(new File(generatedSourcesFolder));
+            File file = new File(generatedSourcesFolder);
+            if (!file.exists()) {
+                boolean mkdirs = file.mkdirs();
+                if (!mkdirs) {
+                    getLog().warn("Couldn't create " + generatedSourcesFolder);
+                }
+            }
+            javaFile.build(file, (PrintStream) null);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    JavaFile generateEnumWithFilesChecksum(List<File> files) {
-        TypeSpec.Builder builder = TypeSpec.enumBuilder("JavaMigrationChecksums").addModifiers(Modifier.PUBLIC);
+    JCodeModel generateEnumWithFilesChecksum(List<File> files) {
+        JCodeModel codeModel = new JCodeModel();
+        JDefinedClass enumClass;
+        try {
+            enumClass = codeModel._class("io.github.agileek.flyway.JavaMigrationChecksums", EClassType.ENUM);
+        } catch (JClassAlreadyExistsException e) {
+            throw new RuntimeException(e);
+        }
+        JFieldVar checksumField = enumClass.field(JMod.PRIVATE | JMod.FINAL, String.class, "checksum");
+
+        //Define the enum constructor
+        JMethod enumConstructor = enumClass.constructor(JMod.PRIVATE);
+        enumConstructor.param(String.class, "checksum");
+        enumConstructor.body().assign(JExpr._this().ref("checksum"), JExpr.ref("checksum"));
+
+        JMethod getterColumnMethod = enumClass.method(JMod.PUBLIC, String.class, "getChecksum");
+        getterColumnMethod.body()._return(checksumField);
 
         for (File file : files) {
-            builder.addEnumConstant(file.getName().split("\\.")[0], TypeSpec.anonymousClassBuilder("$S", computeFileChecksum(file)).build());
+            JEnumConstant enumConst = enumClass.enumConstant(file.getName().split("\\.")[0]);
+            enumConst.arg(JExpr.lit(computeFileChecksum(file)));
         }
-        return JavaFile
-                .builder("io.github.agileek.flyway",
-                        builder
-                                .addField(String.class, "checksum", Modifier.PRIVATE, Modifier.FINAL)
-                                .addMethod(
-                                        MethodSpec
-                                                .constructorBuilder()
-                                                .addParameter(String.class, "checksum")
-                                                .addStatement("this.$N = $N", "checksum", "checksum")
-                                                .build()
-                                )
-                                .build()
-                )
-                .build();
 
+        return codeModel;
     }
 
     List<File> getJavaFiles(List<String> compileSourceRoots, String location) {

@@ -37,10 +37,10 @@ public class ChecksumFlywayMojoTest {
 
         };
         tested.location = "db/migration";
-        tested.generatedSourcesFolder = temporaryFolder.newFolder().getAbsolutePath();
+        tested.outputDirectory = temporaryFolder.newFolder().getAbsolutePath();
         tested.execute();
 
-        assertThat(new File(tested.generatedSourcesFolder, "io/github/agileek/flyway/JavaMigrationChecksums.java"))
+        assertThat(new File(tested.outputDirectory, "io/github/agileek/flyway/JavaMigrationChecksums.java"))
                 .hasSameContentAs(new File("src/test/resources/ExpectedJavaMigrationFile.java"));
     }
 

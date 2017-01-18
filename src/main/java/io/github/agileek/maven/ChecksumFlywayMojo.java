@@ -35,8 +35,8 @@ public class ChecksumFlywayMojo extends AbstractMojo {
     @Parameter(name = "location", defaultValue = "/db/migration")
     String location;
 
-    @Parameter(name = "generatedSourcesFolder", defaultValue = "${project.build.directory}/generated-sources")
-    String generatedSourcesFolder;
+    @Parameter(name = "outputDirectory", defaultValue = "${project.build.directory}/generated-sources")
+    String outputDirectory;
 
     @Parameter(defaultValue = "${project}", readonly = true, required = true)
     MavenProject project;
@@ -46,11 +46,11 @@ public class ChecksumFlywayMojo extends AbstractMojo {
     public final void execute() throws MojoExecutionException, MojoFailureException {
         JCodeModel javaFile = generateEnumWithFilesChecksum(getJavaFiles(project.getCompileSourceRoots(), location));
         try {
-            File file = new File(generatedSourcesFolder);
+            File file = new File(outputDirectory);
             if (!file.exists()) {
                 boolean mkdirs = file.mkdirs();
                 if (!mkdirs) {
-                    getLog().warn("Couldn't create " + generatedSourcesFolder);
+                    getLog().warn("Couldn't create " + outputDirectory);
                 }
             }
             javaFile.build(file, (PrintStream) null);

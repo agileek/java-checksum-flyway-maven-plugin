@@ -17,7 +17,7 @@ This plugin scans the db/migration folder looking for java migrations, and for e
 ## Usages
 
 Simply put this in your pom 
-
+```xml
     <plugin>
         <groupId>io.github.agileek</groupId>
         <artifactId>java-checksum-flyway-maven-plugin</artifactId>
@@ -30,9 +30,18 @@ Simply put this in your pom
             </execution>
         </executions>
     </plugin>
-    
+``` 
 This will generate a file `${project.build.directory}/generated-sources/io/github/agileek/flywayJavaMigrationChecksums` and you can use it in your java migrations
 
+In your migration class, implement `MigrationChecksumProvider` then
+
+```java
+    @Override
+    public Integer getChecksum() {
+        return JavaMigrationChecksums.valueOf(getClass().getSimpleName()).getChecksum();
+    }
+
+```
 ### Parameters
 
 The parameters are:

@@ -14,11 +14,10 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.io.RandomAccessFile;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.zip.CRC32;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
@@ -67,14 +66,14 @@ public class ChecksumFlywayMojo extends AbstractMojo {
         } catch (JClassAlreadyExistsException e) {
             throw new RuntimeException(e);
         }
-        JFieldVar checksumField = enumClass.field(JMod.PRIVATE | JMod.FINAL, String.class, "checksum");
+        JFieldVar checksumField = enumClass.field(JMod.PRIVATE | JMod.FINAL, long.class, "checksum");
 
         //Define the enum constructor
         JMethod enumConstructor = enumClass.constructor(JMod.PRIVATE);
-        enumConstructor.param(String.class, "checksum");
+        enumConstructor.param(long.class, "checksum");
         enumConstructor.body().assign(JExpr._this().ref("checksum"), JExpr.ref("checksum"));
 
-        JMethod getterColumnMethod = enumClass.method(JMod.PUBLIC, String.class, "getChecksum");
+        JMethod getterColumnMethod = enumClass.method(JMod.PUBLIC, long.class, "getChecksum");
         getterColumnMethod.body()._return(checksumField);
 
         for (File file : files) {
@@ -102,29 +101,19 @@ public class ChecksumFlywayMojo extends AbstractMojo {
         return files;
     }
 
-    String computeFileChecksum(File file) {
-        MessageDigest md;
-        try {
-            md = MessageDigest.getInstance("MD5");
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException(e);
-        }
-        RandomAccessFile f = null;
-        try {
-            try {
-                f = new RandomAccessFile(file, "r");
-                byte[] b = new byte[(int) f.length()];
-                f.readFully(b);
-                return this.toHexString(md.digest(b));
-            } finally {
-                if (f != null) {
-                    f.close();
-                }
-            }
-        } catch (IOException ex) {
-            throw new RuntimeException(ex);
-        }
+    long computeFileChecksum(File file) {
+        final CRC32 crc32 = new CRC32();
 
+        try {
+            RandomAccessFile r = new RandomAccessFile(file, "r");
+            byte[] b = new byte[(int) r.length()];
+            r.readFully(b);
+            crc32.update(b);
+        } catch (IOException e) {
+            String message = "Unable to calculate checksum for " + file.getAbsolutePath();
+            throw new RuntimeException(message, e);
+        }
+        return crc32.getValue();
     }
 
     private String toHexString(byte[] bytes) {

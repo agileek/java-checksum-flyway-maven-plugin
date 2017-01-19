@@ -59,9 +59,9 @@ public class ChecksumFlywayMojoTest {
 
     @Test
     public void shouldComputeFileChecksum() throws Exception {
-        String actual = tested.computeFileChecksum(new File("src/test/resources/java/db/migration/Toto.java"));
+        long actual = tested.computeFileChecksum(new File("src/test/resources/java/db/migration/Toto.java"));
 
-        assertThat(actual).isEqualTo("60e90cc0aedc457d95ebfa601f366c10");
+        assertThat(actual).isEqualTo(2367180011L);
     }
 
     @Test

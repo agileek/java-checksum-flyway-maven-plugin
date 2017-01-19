@@ -5,6 +5,12 @@
     <artifactId>java-checksum-flyway-maven-plugin</artifactId>
     <version>1.0-SNAPSHOT</version>
     <packaging>maven-plugin</packaging>
+    <name>${project.artifactId}</name>
+    <description>Generate an enum containing all flyway java migration files and their corresponding md5sum</description>
+    <url>https://github.com/agileek/java-checksum-flyway-maven-plugin</url>
+    <scm>
+        <url>https://github.com/agileek/java-checksum-flyway-maven-plugin.git</url>
+    </scm>
     <licenses>
         <license>
             <name>MIT</name>
@@ -208,4 +214,10 @@
             </build>
         </profile>
     </profiles>
+
+    <developers>
+        <developer>
+            <name>Michaël Bitard</name>
+        </developer>
+    </developers>
 </project>

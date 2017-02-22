@@ -43,29 +43,20 @@ public class ChecksumFlywayMojo extends AbstractMojo {
 
     @Override
     public final void execute() throws MojoExecutionException, MojoFailureException {
-        JCodeModel javaFile = generateEnumWithFilesChecksum(getJavaFiles(project.getCompileSourceRoots(), location));
         try {
+            JCodeModel javaFile = generateEnumWithFilesChecksum(getJavaFiles(project.getCompileSourceRoots(), location));
             File file = new File(outputDirectory);
-            if (!file.exists()) {
-                boolean mkdirs = file.mkdirs();
-                if (!mkdirs) {
-                    getLog().warn("Couldn't create " + outputDirectory);
-                }
-            }
+            //noinspection ResultOfMethodCallIgnored
+            file.mkdirs();
             javaFile.build(file, (PrintStream) null);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        } catch (Exception e) {
+            throw new MojoFailureException("Failure", e);
         }
     }
 
-    JCodeModel generateEnumWithFilesChecksum(List<File> files) {
+    JCodeModel generateEnumWithFilesChecksum(List<File> files) throws JClassAlreadyExistsException {
         JCodeModel codeModel = new JCodeModel();
-        JDefinedClass enumClass;
-        try {
-            enumClass = codeModel._class("io.github.agileek.flyway.JavaMigrationChecksums", EClassType.ENUM);
-        } catch (JClassAlreadyExistsException e) {
-            throw new RuntimeException(e);
-        }
+        JDefinedClass enumClass = codeModel._class("io.github.agileek.flyway.JavaMigrationChecksums", EClassType.ENUM);
         JFieldVar checksumField = enumClass.field(JMod.PRIVATE | JMod.FINAL, long.class, "checksum");
 
         //Define the enum constructor

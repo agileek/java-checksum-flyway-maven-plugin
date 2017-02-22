@@ -11,12 +11,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 
 public class ChecksumFlywayMojoTest {
 
     @Rule
     public TemporaryFolder temporaryFolder = new TemporaryFolder();
+    @Rule
+    public ExpectedException expectedException = ExpectedException.none();
+
     private ChecksumFlywayMojo tested;
 
     @Before
@@ -37,7 +41,7 @@ public class ChecksumFlywayMojoTest {
 
         };
         tested.location = "db/migration";
-        tested.outputDirectory = temporaryFolder.newFolder().getAbsolutePath();
+        tested.outputDirectory = temporaryFolder.newFolder().getAbsolutePath() + "insideFolder" + File.pathSeparator;
         tested.execute();
 
         assertThat(new File(tested.outputDirectory, "io/github/agileek/flyway/JavaMigrationChecksums.java"))
@@ -62,6 +66,12 @@ public class ChecksumFlywayMojoTest {
         long actual = tested.computeFileChecksum(new File("src/test/resources/java/db/migration/Toto.java"));
 
         assertThat(actual).isEqualTo(2367180011L);
+    }
+
+    @Test
+    public void shouldComputeFileChecksum_failOnUnknownFile() throws Exception {
+        expectedException.expect(RuntimeException.class);
+        tested.computeFileChecksum(new File("src/test/resources/java/db/migration/Unknown.java"));
     }
 
     @Test

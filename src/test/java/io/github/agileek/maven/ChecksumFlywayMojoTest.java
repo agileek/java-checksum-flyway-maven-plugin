@@ -29,7 +29,7 @@ public class ChecksumFlywayMojoTest {
     }
 
     @Test
-    public void shouldExecute() throws Exception {
+    public void shouldExecuteOnlyOneLocation() throws Exception {
 
         tested.project = new MavenProject() {
             @Override
@@ -46,6 +46,27 @@ public class ChecksumFlywayMojoTest {
 
         assertThat(new File(tested.outputDirectory, "io/github/agileek/flyway/JavaMigrationChecksums.java"))
                 .hasSameContentAs(new File("src/test/resources/ExpectedJavaMigrationFile.java"));
+    }
+
+
+    @Test
+    public void shouldExecuteOnlyTwoLocations() throws Exception {
+
+        tested.project = new MavenProject() {
+            @Override
+            public List<String> getCompileSourceRoots() {
+                List<String> files = new ArrayList<String>();
+                files.add("src/test/resources/java/");
+                return files;
+            }
+
+        };
+        tested.locations = new String[] {"db/migration", "newdbpackage"};
+        tested.outputDirectory = temporaryFolder.newFolder().getAbsolutePath() + "insideFolder" + File.pathSeparator;
+        tested.execute();
+
+        assertThat(new File(tested.outputDirectory, "io/github/agileek/flyway/JavaMigrationChecksums.java"))
+                .hasSameContentAs(new File("src/test/resources/ExpectedJavaMigrationFileWithMultipleLocations.java"));
     }
 
     @Test

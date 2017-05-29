@@ -50,5 +50,7 @@ The parameters are:
 
 * location
   * defaultValue = "/db/migration"
+* locations
+  * defaultValue = "/db/migration"
 * outputDirectory
   * defaultValue = "${project.build.directory}/generated-sources"

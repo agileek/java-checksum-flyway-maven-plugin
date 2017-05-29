@@ -9,6 +9,7 @@ import com.helger.jcodemodel.JExpr;
 import com.helger.jcodemodel.JFieldVar;
 import com.helger.jcodemodel.JMethod;
 import com.helger.jcodemodel.JMod;
+
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
@@ -18,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.zip.CRC32;
+
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
@@ -31,6 +33,10 @@ import org.apache.maven.project.MavenProject;
         defaultPhase = LifecyclePhase.GENERATE_SOURCES
 )
 public class ChecksumFlywayMojo extends AbstractMojo {
+
+    @Parameter(name = "locations", required = false)
+    String[] locations;
+
     @Parameter(name = "location", defaultValue = "/db/migration")
     String location;
 
@@ -44,7 +50,10 @@ public class ChecksumFlywayMojo extends AbstractMojo {
     @Override
     public final void execute() throws MojoExecutionException, MojoFailureException {
         try {
-            JCodeModel javaFile = generateEnumWithFilesChecksum(getJavaFiles(project.getCompileSourceRoots(), location));
+            if (locations == null || locations.length == 0) {
+                locations = new String[]{location};
+            }
+            JCodeModel javaFile = generateEnumWithFilesChecksum(getJavaFiles(project.getCompileSourceRoots(), locations));
             File file = new File(outputDirectory);
             //noinspection ResultOfMethodCallIgnored
             file.mkdirs();
@@ -75,18 +84,20 @@ public class ChecksumFlywayMojo extends AbstractMojo {
         return codeModel;
     }
 
-    List<File> getJavaFiles(List<String> compileSourceRoots, String location) {
+    List<File> getJavaFiles(List<String> compileSourceRoots, String... locations) {
         List<File> files = new ArrayList<File>();
         for (String compileSourceRoot : compileSourceRoots) {
-            File file = new File(compileSourceRoot + location);
-            File[] java = file.listFiles(new FilenameFilter() {
-                @Override
-                public boolean accept(File dir, String name) {
-                    return name.endsWith(".java");
+            for (String location : locations) {
+                File file = new File(compileSourceRoot + location);
+                File[] java = file.listFiles(new FilenameFilter() {
+                    @Override
+                    public boolean accept(File dir, String name) {
+                        return name.endsWith(".java");
+                    }
+                });
+                if (java != null) {
+                    Collections.addAll(files, java);
                 }
-            });
-            if (java != null) {
-                Collections.addAll(files, java);
             }
         }
         return files;

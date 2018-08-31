@@ -66,14 +66,14 @@ public class ChecksumFlywayMojo extends AbstractMojo {
     JCodeModel generateEnumWithFilesChecksum(List<File> files) throws JClassAlreadyExistsException {
         JCodeModel codeModel = new JCodeModel();
         JDefinedClass enumClass = codeModel._class("io.github.agileek.flyway.JavaMigrationChecksums", EClassType.ENUM);
-        JFieldVar checksumField = enumClass.field(JMod.PRIVATE | JMod.FINAL, long.class, "checksum");
+        JFieldVar checksumField = enumClass.field(JMod.PRIVATE | JMod.FINAL, int.class, "checksum");
 
         //Define the enum constructor
         JMethod enumConstructor = enumClass.constructor(JMod.PRIVATE);
-        enumConstructor.param(long.class, "checksum");
+        enumConstructor.param(int.class, "checksum");
         enumConstructor.body().assign(JExpr._this().ref("checksum"), JExpr.ref("checksum"));
 
-        JMethod getterColumnMethod = enumClass.method(JMod.PUBLIC, long.class, "getChecksum");
+        JMethod getterColumnMethod = enumClass.method(JMod.PUBLIC, int.class, "getChecksum");
         getterColumnMethod.body()._return(checksumField);
 
         for (File file : files) {
@@ -103,7 +103,7 @@ public class ChecksumFlywayMojo extends AbstractMojo {
         return files;
     }
 
-    long computeFileChecksum(File file) {
+    int computeFileChecksum(File file) {
         final CRC32 crc32 = new CRC32();
 
         try {
@@ -115,6 +115,6 @@ public class ChecksumFlywayMojo extends AbstractMojo {
             String message = "Unable to calculate checksum for " + file.getAbsolutePath();
             throw new RuntimeException(message, e);
         }
-        return crc32.getValue();
+        return (int) crc32.getValue();
     }
 }

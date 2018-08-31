@@ -1,15 +1,15 @@
 package io.github.agileek.flyway;
 
 public enum JavaMigrationChecksums {
-    Toto(2367180011L),
-    NewMigration(1704905491L);
-    private final long checksum;
+    Toto(-1927787285),
+    NewMigration(1704905491);
+    private final int checksum;
 
-    private JavaMigrationChecksums(long checksum) {
+    private JavaMigrationChecksums(int checksum) {
         this.checksum = checksum;
     }
 
-    public long getChecksum() {
+    public int getChecksum() {
         return checksum;
     }
 }
